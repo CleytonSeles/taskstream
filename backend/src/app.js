@@ -2,7 +2,7 @@ const fastify = require('fastify')({ logger: true })
 
 // Registrar plugins
 fastify.register(require('@fastify/cors'), {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000'
+  origin: process.env.FRONTEND_URL || ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174']
 })
 
 // Registrar rotas

@@ -22,6 +22,6 @@ taskstream/
 - ✅ Setup inicial
 - ✅ Configuração do backend
 - ✅ Configuração do frontend
-- [ ] Implementação de autenticação
+- ✅ Implementação de autenticação
 - [ ] CRUD de tarefas
 - [ ] Deploy e observabilidade

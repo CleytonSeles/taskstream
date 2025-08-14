@@ -1,31 +1,50 @@
 <template>
-  <div id="app" class="min-h-screen bg-gray-100">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
-      <div class="container mx-auto px-4 py-4">
-        <h1 class="text-3xl font-bold text-gray-800">
-          🚀 TaskStream
-        </h1>
-        <p class="text-gray-600 mt-1">Sistema de Gerenciamento de Tarefas Colaborativo</p>
+  <div id="app">
+    <!-- Loading inicial -->
+    <div v-if="loading" class="min-h-screen flex items-center justify-center bg-gray-100">
+      <div class="text-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+        <p class="mt-4 text-gray-600">Carregando TaskStream...</p>
       </div>
-    </header>
+    </div>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-      <ApiStatus />
-      
+    <!-- Aplicação -->
+    <div v-else>
       <RouterView />
-    </main>
+    </div>
   </div>
 </template>
 
 <script>
-import ApiStatus from './components/ApiStatus.vue'
+import { ref, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth.js'
+import { authService } from '@/services/authService.js'
 
 export default {
   name: 'App',
-  components: {
-    ApiStatus
+  setup() {
+    const authStore = useAuthStore()
+    const loading = ref(true)
+
+    onMounted(async () => {
+      try {
+        // Inicializar autenticação
+        await authStore.initAuth()
+        
+        // Se há token, verificar se ainda é válido
+        if (authStore.token) {
+          await authService.verifyToken()
+        }
+      } catch (error) {
+        console.error('Erro na inicialização:', error)
+      } finally {
+        loading.value = false
+      }
+    })
+
+    return {
+      loading
+    }
   }
 }
 </script>

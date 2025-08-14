@@ -7,13 +7,23 @@ fastify.register(require('@fastify/cors'), {
 
 // Registrar rotas
 fastify.register(require('./routes/health'), { prefix: '/api/v1' })
+fastify.register(require('./routes/auth'), { prefix: '/api/v1/auth' })
 
 // Rota raiz
 fastify.get('/', async (request, reply) => {
   return { 
     message: 'TaskStream API is running!',
     version: '1.0.0',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/api/v1/health',
+      auth: {
+        register: 'POST /api/v1/auth/register',
+        login: 'POST /api/v1/auth/login',
+        profile: 'GET /api/v1/auth/me',
+        logout: 'POST /api/v1/auth/logout'
+      }
+    }
   }
 })
 

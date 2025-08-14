@@ -1,178 +1,212 @@
+const { PrismaClient } = require('@prisma/client')
 const Task = require('../models/Task')
 
-// Simulando banco de dados em memória
-let tasks = [
-  {
-    id: 1,
-    title: 'Implementar autenticação JWT',
-    description: 'Criar sistema completo de login e registro com tokens JWT',
-    status: 'completed',
-    priority: 'high',
-    category: 'backend',
-    userId: 1,
-    dueDate: new Date(Date.now() - 86400000), // ontem
-    createdAt: new Date(Date.now() - 172800000), // 2 dias atrás
-    completedAt: new Date(Date.now() - 86400000)
-  },
-  {
-    id: 2,
-    title: 'Criar dashboard responsivo',
-    description: 'Interface principal com estatísticas e navegação',
-    status: 'in_progress',
-    priority: 'medium',
-    category: 'frontend',
-    userId: 1,
-    dueDate: new Date(Date.now() + 86400000), // amanhã
-    createdAt: new Date(Date.now() - 86400000)
-  },
-  {
-    id: 3,
-    title: 'Configurar banco PostgreSQL',
-    description: 'Setup do banco de dados em produção com migrations',
-    status: 'pending',
-    priority: 'high',
-    category: 'devops',
-    userId: 1,
-    dueDate: new Date(Date.now() + 172800000), // 2 dias
-    createdAt: new Date()
-  }
-]
-
-let nextId = 4
+const prisma = new PrismaClient()
 
 class TaskRepository {
   async findAll(filters = {}) {
-    let filteredTasks = [...tasks]
+    const where = {}
 
-    // Filtrar por usuário
+    // Filtros de usuário
     if (filters.userId) {
-      filteredTasks = filteredTasks.filter(task => 
-        task.userId === filters.userId || task.assignedTo === filters.userId
-      )
+      where.OR = [
+        { userId: filters.userId },
+        { assignedToId: filters.userId }
+      ]
     }
 
-    // Filtrar por status
+    // Filtros específicos
     if (filters.status) {
-      filteredTasks = filteredTasks.filter(task => task.status === filters.status)
+      where.status = filters.status
     }
 
-    // Filtrar por categoria
     if (filters.category) {
-      filteredTasks = filteredTasks.filter(task => task.category === filters.category)
+      where.category = filters.category
     }
 
-    // Filtrar por prioridade
     if (filters.priority) {
-      filteredTasks = filteredTasks.filter(task => task.priority === filters.priority)
+      where.priority = filters.priority
     }
 
-    // Buscar por texto
+    // Busca por texto
     if (filters.search) {
-      const searchTerm = filters.search.toLowerCase()
-      filteredTasks = filteredTasks.filter(task => 
-        task.title.toLowerCase().includes(searchTerm) ||
-        task.description.toLowerCase().includes(searchTerm)
-      )
+      where.OR = [
+        ...(where.OR || []),
+        {
+          title: {
+            contains: filters.search,
+            mode: 'insensitive'
+          }
+        },
+        {
+          description: {
+            contains: filters.search,
+            mode: 'insensitive'
+          }
+        }
+      ]
     }
 
-    // Ordenar
-    const sortBy = filters.sortBy || 'createdAt'
-    const sortOrder = filters.sortOrder || 'desc'
-    
-    filteredTasks.sort((a, b) => {
-      let aValue = a[sortBy]
-      let bValue = b[sortBy]
-      
-      if (aValue instanceof Date) aValue = aValue.getTime()
-      if (bValue instanceof Date) bValue = bValue.getTime()
-      
-      if (sortOrder === 'desc') {
-        return bValue > aValue ? 1 : -1
-      } else {
-        return aValue > bValue ? 1 : -1
+    // Ordenação
+    const orderBy = {}
+    if (filters.sortBy) {
+      orderBy[filters.sortBy] = filters.sortOrder || 'desc'
+    } else {
+      orderBy.createdAt = 'desc'
+    }
+
+    const tasks = await prisma.task.findMany({
+      where,
+      orderBy,
+      include: {
+        owner: {
+          select: { id: true, name: true, email: true }
+        },
+        assignedTo: {
+          select: { id: true, name: true, email: true }
+        }
       }
     })
 
-    return filteredTasks.map(taskData => new Task(taskData))
+    return tasks.map(taskData => new Task(taskData))
   }
 
   async findById(id) {
-    const taskData = tasks.find(task => task.id === parseInt(id))
+    const taskData = await prisma.task.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        owner: {
+          select: { id: true, name: true, email: true }
+        },
+        assignedTo: {
+          select: { id: true, name: true, email: true }
+        }
+      }
+    })
+
     return taskData ? new Task(taskData) : null
   }
 
   async create(taskData) {
-    const task = new Task({
-      ...taskData,
-      id: nextId++,
-      createdAt: new Date(),
-      updatedAt: new Date()
+    const createdTask = await prisma.task.create({
+      data: {
+        title: taskData.title,
+        description: taskData.description,
+        status: taskData.status || 'pending',
+        priority: taskData.priority || 'medium',
+        category: taskData.category || 'general',
+        dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
+        userId: taskData.userId,
+        assignedToId: taskData.assignedToId || null
+      },
+      include: {
+        owner: {
+          select: { id: true, name: true, email: true }
+        },
+        assignedTo: {
+          select: { id: true, name: true, email: true }
+        }
+      }
     })
 
-    tasks.push(task)
-    return task
+    return new Task(createdTask)
   }
 
   async update(id, updateData) {
-    const index = tasks.findIndex(task => task.id === parseInt(id))
-    
-    if (index === -1) return null
+    try {
+      // Se mudou para completed, definir completedAt
+      if (updateData.status === 'completed') {
+        updateData.completedAt = new Date()
+      }
 
-    // Preservar campos que não devem ser alterados
-    const existingTask = tasks[index]
-    const updatedTask = {
-      ...existingTask,
-      ...updateData,
-      id: existingTask.id,
-      userId: existingTask.userId,
-      createdAt: existingTask.createdAt,
-      updatedAt: new Date()
+      const updatedTask = await prisma.task.update({
+        where: { id: parseInt(id) },
+        data: {
+          ...updateData,
+          dueDate: updateData.dueDate ? new Date(updateData.dueDate) : undefined,
+          updatedAt: new Date()
+        },
+        include: {
+          owner: {
+            select: { id: true, name: true, email: true }
+          },
+          assignedTo: {
+            select: { id: true, name: true, email: true }
+          }
+        }
+      })
+
+      return new Task(updatedTask)
+    } catch (error) {
+      if (error.code === 'P2025') {
+        return null // Task not found
+      }
+      throw error
     }
-
-    // Se mudou para completed, definir completedAt
-    if (updateData.status === 'completed' && existingTask.status !== 'completed') {
-      updatedTask.completedAt = new Date()
-    }
-
-    tasks[index] = updatedTask
-    return new Task(updatedTask)
   }
 
   async delete(id) {
-    const index = tasks.findIndex(task => task.id === parseInt(id))
-    
-    if (index === -1) return false
-
-    tasks.splice(index, 1)
-    return true
+    try {
+      await prisma.task.delete({
+        where: { id: parseInt(id) }
+      })
+      return true
+    } catch (error) {
+      if (error.code === 'P2025') {
+        return false // Task not found
+      }
+      throw error
+    }
   }
 
   // Estatísticas do usuário
   async getUserStats(userId) {
-    const userTasks = tasks.filter(task => 
-      task.userId === userId || task.assignedTo === userId
-    )
-
-    const stats = {
-      total: userTasks.length,
-      pending: userTasks.filter(task => task.status === 'pending').length,
-      inProgress: userTasks.filter(task => task.status === 'in_progress').length,
-      completed: userTasks.filter(task => task.status === 'completed').length,
-      overdue: userTasks.filter(task => {
-        const taskObj = new Task(task)
-        return taskObj.isOverdue()
-      }).length
+    const where = {
+      OR: [
+        { userId: userId },
+        { assignedToId: userId }
+      ]
     }
 
-    return stats
+    const [total, pending, inProgress, completed] = await Promise.all([
+      prisma.task.count({ where }),
+      prisma.task.count({ where: { ...where, status: 'pending' } }),
+      prisma.task.count({ where: { ...where, status: 'in_progress' } }),
+      prisma.task.count({ where: { ...where, status: 'completed' } })
+    ])
+
+    // Tarefas atrasadas
+    const overdue = await prisma.task.count({
+      where: {
+        ...where,
+        status: { not: 'completed' },
+        dueDate: { lt: new Date() }
+      }
+    })
+
+    return {
+      total,
+      pending,
+      inProgress,
+      completed,
+      overdue
+    }
   }
 
   // Verificar se usuário tem acesso à tarefa
   async hasAccess(taskId, userId) {
-    const task = await this.findById(taskId)
-    if (!task) return false
-    
-    return task.userId === userId || task.assignedTo === userId
+    const task = await prisma.task.findFirst({
+      where: {
+        id: parseInt(taskId),
+        OR: [
+          { userId: userId },
+          { assignedToId: userId }
+        ]
+      },
+      select: { id: true }
+    })
+
+    return !!task
   }
 }
 

@@ -1,74 +1,103 @@
+const { PrismaClient } = require('@prisma/client')
 const User = require('../models/User')
 
-// Simulando um banco de dados em memória (posteriormente substituiremos por PostgreSQL)
-let users = [
-  {
-    id: 1,
-    name: 'Admin User',
-    email: 'admin@taskstream.com',
-    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-    role: 'admin',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-]
-
-let nextId = 2
+const prisma = new PrismaClient()
 
 class UserRepository {
   async findAll() {
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: 'desc' }
+    })
     return users.map(userData => new User(userData))
   }
 
   async findById(id) {
-    const userData = users.find(user => user.id === parseInt(id))
+    const userData = await prisma.user.findUnique({
+      where: { id: parseInt(id) }
+    })
     return userData ? new User(userData) : null
   }
 
   async findByEmail(email) {
-    const userData = users.find(user => user.email === email)
+    const userData = await prisma.user.findUnique({
+      where: { email }
+    })
     return userData ? new User(userData) : null
   }
 
   async create(userData) {
-    const user = new User({
-      ...userData,
-      id: nextId++,
-      createdAt: new Date(),
-      updatedAt: new Date()
+    const user = new User(userData)
+    await user.hashPassword()
+
+    const createdUser = await prisma.user.create({
+      data: {
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        role: user.role
+      }
     })
 
-    await user.hashPassword()
-    users.push(user)
-    
-    return user
+    return new User(createdUser)
   }
 
   async update(id, userData) {
-    const index = users.findIndex(user => user.id === parseInt(id))
-    
-    if (index === -1) return null
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { id: parseInt(id) },
+        data: {
+          ...userData,
+          updatedAt: new Date()
+        }
+      })
 
-    users[index] = {
-      ...users[index],
-      ...userData,
-      updatedAt: new Date()
+      return new User(updatedUser)
+    } catch (error) {
+      if (error.code === 'P2025') {
+        return null // User not found
+      }
+      throw error
     }
-
-    return new User(users[index])
   }
 
   async delete(id) {
-    const index = users.findIndex(user => user.id === parseInt(id))
-    
-    if (index === -1) return false
-
-    users.splice(index, 1)
-    return true
+    try {
+      await prisma.user.delete({
+        where: { id: parseInt(id) }
+      })
+      return true
+    } catch (error) {
+      if (error.code === 'P2025') {
+        return false // User not found
+      }
+      throw error
+    }
   }
 
   async emailExists(email) {
-    return users.some(user => user.email === email)
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true }
+    })
+    return !!user
+  }
+
+  // Buscar usuários para atribuição de tarefas
+  async findUsersForAssignment(excludeUserId = null) {
+    const whereClause = excludeUserId ? { NOT: { id: excludeUserId } } : {}
+    
+    const users = await prisma.user.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true
+      },
+      orderBy: { name: 'asc' }
+    })
+
+    return users
   }
 }
 

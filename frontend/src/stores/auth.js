@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { authService } from '@/services/authService.js'
 
 export const useAuthStore = defineStore('auth', () => {
   // Estado
@@ -17,8 +18,12 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = newToken
     if (newToken) {
       localStorage.setItem('taskstream_token', newToken)
+      // Configurar token no axios
+      authService.setAuthToken(newToken)
     } else {
       localStorage.removeItem('taskstream_token')
+      // Remover token do axios
+      authService.setAuthToken(null)
     }
   }
 
@@ -46,7 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
     const storedToken = localStorage.getItem('taskstream_token')
     if (storedToken) {
       setToken(storedToken)
-      // Aqui verificaremos o token no próximo passo
+      // Token será configurado automaticamente no setToken
     }
   }
 

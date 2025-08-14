@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: taskstream_postgres
+    environment:
+      POSTGRES_USER: taskstream_user
+      POSTGRES_PASSWORD: taskstream_pass
+      POSTGRES_DB: taskstream_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - taskstream_network
+
+  adminer:
+    image: adminer
+    container_name: taskstream_adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - taskstream_network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+
+networks:
+  taskstream_network:
+    driver: bridge

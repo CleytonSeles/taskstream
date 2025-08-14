@@ -8,6 +8,7 @@ fastify.register(require('@fastify/cors'), {
 // Registrar rotas
 fastify.register(require('./routes/health'), { prefix: '/api/v1' })
 fastify.register(require('./routes/auth'), { prefix: '/api/v1/auth' })
+fastify.register(require('./routes/tasks'), { prefix: '/api/v1/tasks' })
 
 // Rota raiz
 fastify.get('/', async (request, reply) => {
@@ -22,6 +23,16 @@ fastify.get('/', async (request, reply) => {
         login: 'POST /api/v1/auth/login',
         profile: 'GET /api/v1/auth/me',
         logout: 'POST /api/v1/auth/logout'
+      },
+      tasks: {
+        list: 'GET /api/v1/tasks',
+        create: 'POST /api/v1/tasks',
+        get: 'GET /api/v1/tasks/:id',
+        update: 'PUT /api/v1/tasks/:id',
+        delete: 'DELETE /api/v1/tasks/:id',
+        complete: 'PATCH /api/v1/tasks/:id/complete',
+        stats: 'GET /api/v1/tasks/stats',
+        assign: 'PATCH /api/v1/tasks/:id/assign'
       }
     }
   }

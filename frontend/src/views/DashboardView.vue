@@ -40,117 +40,117 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div class="px-4 py-6 sm:px-0">
-        <!-- Cards de estatísticas -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <span class="text-2xl">📋</span>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">
-                      Tarefas Totais
-                    </dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {{ stats.totalTasks }}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <span class="text-2xl">✅</span>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">
-                      Concluídas
-                    </dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {{ stats.completedTasks }}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <span class="text-2xl">⏳</span>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">
-                      Pendentes
-                    </dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {{ stats.pendingTasks }}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
+        <!-- Loading inicial -->
+        <div v-if="initialLoading" class="text-center py-12">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p class="mt-4 text-gray-600">Carregando dados...</p>
         </div>
 
-        <!-- Seção de tarefas recentes -->
-        <div class="bg-white shadow overflow-hidden sm:rounded-md">
-          <div class="px-4 py-5 sm:px-6">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">
-              Tarefas Recentes
-            </h3>
-            <p class="mt-1 max-w-2xl text-sm text-gray-500">
-              Suas tarefas mais recentes aparecerão aqui.
-            </p>
-          </div>
-          <ul class="divide-y divide-gray-200">
-            <li v-for="task in recentTasks" :key="task.id" class="px-4 py-4 sm:px-6">
-              <div class="flex items-center justify-between">
+        <div v-else>
+          <!-- Cards de estatísticas reais -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+              <div class="p-5">
                 <div class="flex items-center">
-                  <span class="text-lg mr-3">{{ task.emoji }}</span>
-                  <div>
-                    <p class="text-sm font-medium text-gray-900">
-                      {{ task.title }}
-                    </p>
-                    <p class="text-sm text-gray-500">
-                      {{ task.description }}
-                    </p>
+                  <div class="flex-shrink-0">
+                    <span class="text-2xl">📋</span>
+                  </div>
+                  <div class="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt class="text-sm font-medium text-gray-500 truncate">
+                        Total de Tarefas
+                      </dt>
+                      <dd class="text-lg font-medium text-gray-900">
+                        {{ tasksStore.stats.total }}
+                      </dd>
+                    </dl>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+              <div class="p-5">
                 <div class="flex items-center">
-                  <span 
-                    :class="getStatusClass(task.status)"
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  >
-                    {{ task.status }}
-                  </span>
+                  <div class="flex-shrink-0">
+                    <span class="text-2xl">⏳</span>
+                  </div>
+                  <div class="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt class="text-sm font-medium text-gray-500 truncate">
+                        Pendentes
+                      </dt>
+                      <dd class="text-lg font-medium text-yellow-600">
+                        {{ tasksStore.stats.pending }}
+                      </dd>
+                    </dl>
+                  </div>
                 </div>
               </div>
-            </li>
-          </ul>
-        </div>
+            </div>
 
-        <!-- Painel admin (apenas para admins) -->
-        <div v-if="authStore.isAdmin" class="mt-8 bg-amber-50 border border-amber-200 rounded-lg p-6">
-          <div class="flex items-center">
-            <span class="text-2xl mr-3">👑</span>
-            <div>
-              <h3 class="text-lg font-medium text-amber-800">
-                Painel Administrativo
-              </h3>
-              <p class="text-sm text-amber-700 mt-1">
-                Você tem acesso a funcionalidades administrativas especiais.
-              </p>
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+              <div class="p-5">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <span class="text-2xl">🔄</span>
+                  </div>
+                  <div class="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt class="text-sm font-medium text-gray-500 truncate">
+                        Em Andamento
+                      </dt>
+                      <dd class="text-lg font-medium text-blue-600">
+                        {{ tasksStore.stats.inProgress }}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+              <div class="p-5">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <span class="text-2xl">✅</span>
+                  </div>
+                  <div class="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt class="text-sm font-medium text-gray-500 truncate">
+                        Concluídas
+                      </dt>
+                      <dd class="text-lg font-medium text-green-600">
+                        {{ tasksStore.stats.completed }}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de tarefas -->
+          <TaskList />
+
+          <!-- Painel admin (apenas para admins) -->
+          <div v-if="authStore.isAdmin" class="mt-8 bg-amber-50 border border-amber-200 rounded-lg p-6">
+            <div class="flex items-center">
+              <span class="text-2xl mr-3">👑</span>
+              <div>
+                <h3 class="text-lg font-medium text-amber-800">
+                  Painel Administrativo
+                </h3>
+                <p class="text-sm text-amber-700 mt-1">
+                  Você tem acesso a funcionalidades administrativas especiais.
+                </p>
+                <router-link 
+                  to="/admin" 
+                  class="inline-block mt-2 text-amber-800 hover:text-amber-900 font-medium"
+                >
+                  Acessar painel admin →
+                </router-link>
+              </div>
             </div>
           </div>
         </div>
@@ -163,59 +163,26 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.js'
+import { useTasksStore } from '@/stores/tasks.js'
 import { authService } from '@/services/authService.js'
+import TaskList from '@/components/TaskList.vue'
 
 export default {
   name: 'DashboardView',
+  components: {
+    TaskList
+  },
   setup() {
     const router = useRouter()
     const authStore = useAuthStore()
-
-    // Dados mock das tarefas (posteriormente virão da API)
-    const stats = ref({
-      totalTasks: 12,
-      completedTasks: 8,
-      pendingTasks: 4
-    })
-
-    const recentTasks = ref([
-      {
-        id: 1,
-        title: 'Implementar autenticação JWT',
-        description: 'Criar sistema completo de login e registro',
-        status: 'Concluída',
-        emoji: '🔐'
-      },
-      {
-        id: 2,
-        title: 'Criar dashboard responsivo',
-        description: 'Interface principal com estatísticas',
-        status: 'Em andamento',
-        emoji: '📊'
-      },
-      {
-        id: 3,
-        title: 'Configurar banco PostgreSQL',
-        description: 'Setup do banco de dados em produção',
-        status: 'Pendente',
-        emoji: '🗄️'
-      }
-    ])
+    const tasksStore = useTasksStore()
+    const initialLoading = ref(true)
 
     const roleClasses = computed(() => {
       return authStore.isAdmin 
         ? 'bg-purple-100 text-purple-800'
         : 'bg-blue-100 text-blue-800'
     })
-
-    const getStatusClass = (status) => {
-      const classes = {
-        'Concluída': 'bg-green-100 text-green-800',
-        'Em andamento': 'bg-yellow-100 text-yellow-800',
-        'Pendente': 'bg-gray-100 text-gray-800'
-      }
-      return classes[status] || 'bg-gray-100 text-gray-800'
-    }
 
     const handleLogout = async () => {
       try {
@@ -226,19 +193,31 @@ export default {
       }
     }
 
-    onMounted(() => {
+    onMounted(async () => {
       // Verificar se o usuário ainda está autenticado
       if (!authStore.isAuthenticated) {
         router.push('/login')
+        return
+      }
+
+      try {
+        // Carregar dados iniciais
+        await Promise.all([
+          tasksStore.loadTasks(),
+          tasksStore.loadStats()
+        ])
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error)
+      } finally {
+        initialLoading.value = false
       }
     })
 
     return {
       authStore,
-      stats,
-      recentTasks,
+      tasksStore,
+      initialLoading,
       roleClasses,
-      getStatusClass,
       handleLogout
     }
   }

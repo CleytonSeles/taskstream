@@ -19,9 +19,9 @@ taskstream/
 └── README.md
 
 ## 🚀 Status do Projeto
-[ ] Setup inicial
-[ ] Configuração do backend
-[ ] Configuração do frontend
-[ ] Implementação de autenticação
-[ ] CRUD de tarefas
-[ ] Deploy e observabilidade
+- ✅ Setup inicial
+- ✅ Configuração do backend
+- [ ] Configuração do frontend
+- [ ] Implementação de autenticação
+- [ ] CRUD de tarefas
+- [ ] Deploy e observabilidade
